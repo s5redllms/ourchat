@@ -108,7 +108,7 @@ class ProductionReadinessTest:
                 'duration': duration,
                 'timestamp': datetime.now().isoformat()
             })
-            self.logger.info(f"✅ {test_name} - PASSED ({duration:.2f}s)")
+            self.logger.info(f"PASS: {test_name} - PASSED ({duration:.2f}s)")
             
         except Exception as e:
             duration = time.time() - start_time
@@ -124,10 +124,10 @@ class ProductionReadinessTest:
             
             if critical:
                 self.critical_failures.append(error_msg)
-                self.logger.error(f"❌ CRITICAL: {error_msg}")
+                self.logger.error(f"CRITICAL: {error_msg}")
             else:
                 self.warnings.append(error_msg)
-                self.logger.warning(f"⚠️  WARNING: {error_msg}")
+                self.logger.warning(f"WARNING: {error_msg}")
 
     def safe_request(self, method: str, endpoint: str, **kwargs):
         """Make HTTP request with comprehensive error handling"""
@@ -146,7 +146,7 @@ class ProductionReadinessTest:
 
     def run_all_tests(self):
         """Run all production readiness tests"""
-        self.logger.info("🚀 Starting comprehensive production readiness tests...")
+        self.logger.info("Starting comprehensive production readiness tests...")
         
         # Test categories in order of importance
         test_methods = [
@@ -164,7 +164,7 @@ class ProductionReadinessTest:
         ]
         
         for category, test_method in test_methods:
-            self.logger.info(f"\n📋 Testing Category: {category}")
+            self.logger.info(f"\nTesting Category: {category}")
             try:
                 test_method()
             except Exception as e:
@@ -693,13 +693,13 @@ class ProductionReadinessTest:
         
         # Determine readiness level
         if final_score >= 90 and len(self.critical_failures) == 0:
-            readiness_level = "PRODUCTION READY ✅"
+            readiness_level = "PRODUCTION READY"
             readiness_color = "green"
         elif final_score >= 75 and len(self.critical_failures) <= 1:
-            readiness_level = "MOSTLY READY ⚠️"
+            readiness_level = "MOSTLY READY"
             readiness_color = "orange"
         else:
-            readiness_level = "NOT READY ❌"
+            readiness_level = "NOT READY"
             readiness_color = "red"
         
         # Generate text report
@@ -727,7 +727,7 @@ CRITICAL FAILURES:
             for i, failure in enumerate(self.critical_failures, 1):
                 report += f"{i}. {failure}\n"
         else:
-            report += "None ✅\n"
+            report += "None - All Good\n"
         
         report += f"""
 WARNINGS:
@@ -737,15 +737,15 @@ WARNINGS:
             for i, warning in enumerate(self.warnings, 1):
                 report += f"{i}. {warning}\n"
         else:
-            report += "None ✅\n"
+            report += "None - All Good\n"
         
         report += f"""
 DETAILED TEST RESULTS:
 """
         
         for test in self.test_results:
-            status_icon = "✅" if test['status'] == 'PASSED' else "❌"
-            report += f"  {status_icon} {test['test']} ({test['duration']:.2f}s)\n"
+            status_icon = "PASS" if test['status'] == 'PASSED' else "FAIL"
+            report += f"  [{status_icon}] {test['test']} ({test['duration']:.2f}s)\n"
             if test['status'] == 'FAILED':
                 report += f"     Error: {test.get('error', 'Unknown error')}\n"
         
@@ -758,24 +758,24 @@ RECOMMENDATIONS FOR PRODUCTION:
         recommendations = []
         
         if len(self.critical_failures) > 0:
-            recommendations.append("🚨 Fix all critical failures before deploying to production")
+            recommendations.append("[CRITICAL] Fix all critical failures before deploying to production")
         
         if 'sqlite' in os.environ.get('DATABASE_URL', 'sqlite:///ourchat.db').lower():
-            recommendations.append("📊 Consider upgrading to PostgreSQL or MySQL for production")
+            recommendations.append("[DATABASE] Consider upgrading to PostgreSQL or MySQL for production")
         
         if os.environ.get('SECRET_KEY', 'default') == 'your-secret-key-change-this-in-production':
-            recommendations.append("🔐 Set a secure SECRET_KEY environment variable")
+            recommendations.append("[SECURITY] Set a secure SECRET_KEY environment variable")
         
         if not self.base_url.startswith('https://'):
-            recommendations.append("🔒 Enable HTTPS for production deployment")
+            recommendations.append("[SECURITY] Enable HTTPS for production deployment")
         
         recommendations.extend([
-            "🔄 Set up automated backups for production database",
-            "📊 Configure monitoring and logging for production",
-            "🚀 Use a production WSGI server (Gunicorn, uWSGI)",
-            "🔧 Set up health check endpoints for load balancers",
-            "🛡️  Implement rate limiting for API endpoints",
-            "📈 Set up error tracking (Sentry, Rollbar)",
+            "[BACKUP] Set up automated backups for production database",
+            "[MONITORING] Configure monitoring and logging for production",
+            "[SERVER] Use a production WSGI server (Gunicorn, uWSGI)",
+            "[HEALTH] Set up health check endpoints for load balancers",
+            "[SECURITY] Implement rate limiting for API endpoints",
+            "[MONITORING] Set up error tracking (Sentry, Rollbar)",
         ])
         
         for i, rec in enumerate(recommendations, 1):
@@ -795,7 +795,7 @@ Test URL: {self.base_url}
         
         # Print summary to console
         self.logger.info(f"\n{report}")
-        self.logger.info(f"📄 Full report saved to: {report_file}")
+        self.logger.info(f"Full report saved to: {report_file}")
         
         # Generate HTML report
         self.generate_html_report(final_score, readiness_level, readiness_color)
@@ -877,20 +877,20 @@ Test URL: {self.base_url}
         </div>
         
         <div class="section">
-            <h2>🚨 Critical Issues</h2>
-            {''.join([f'<div class="critical">❌ {failure}</div>' for failure in self.critical_failures]) if self.critical_failures else '<p>✅ No critical issues found!</p>'}
+            <h2>Critical Issues</h2>
+            {''.join([f'<div class="critical">CRITICAL: {failure}</div>' for failure in self.critical_failures]) if self.critical_failures else '<p>No critical issues found!</p>'}
         </div>
         
         <div class="section">
-            <h2>⚠️ Warnings</h2>
-            {''.join([f'<div class="warning">⚠️ {warning}</div>' for warning in self.warnings]) if self.warnings else '<p>✅ No warnings!</p>'}
+            <h2>Warnings</h2>
+            {''.join([f'<div class="warning">WARNING: {warning}</div>' for warning in self.warnings]) if self.warnings else '<p>No warnings!</p>'}
         </div>
         
         <div class="section">
-            <h2>📋 Detailed Test Results</h2>
+            <h2>Detailed Test Results</h2>
             {''.join([f'''
                 <div class="test-item {'passed' if test['status'] == 'PASSED' else 'failed'}">
-                    <span class="test-icon">{'✅' if test['status'] == 'PASSED' else '❌'}</span>
+                    <span class="test-icon">{'PASS' if test['status'] == 'PASSED' else 'FAIL'}</span>
                     <div class="test-details">
                         <div><strong>{test['test']}</strong></div>
                         <div class="test-duration">Duration: {test['duration']:.2f}s</div>
@@ -901,17 +901,17 @@ Test URL: {self.base_url}
         </div>
         
         <div class="section">
-            <h2>💡 Recommendations</h2>
-            <div class="recommendation">🚨 Fix all critical failures before deploying to production</div>
-            <div class="recommendation">📊 Consider upgrading to PostgreSQL or MySQL for production</div>
-            <div class="recommendation">🔐 Ensure SECRET_KEY is properly configured</div>
-            <div class="recommendation">🔒 Enable HTTPS for production deployment</div>
-            <div class="recommendation">🔄 Set up automated backups for production database</div>
-            <div class="recommendation">📊 Configure monitoring and logging for production</div>
-            <div class="recommendation">🚀 Use a production WSGI server (Gunicorn, uWSGI)</div>
-            <div class="recommendation">🔧 Set up health check endpoints for load balancers</div>
-            <div class="recommendation">🛡️ Implement rate limiting for API endpoints</div>
-            <div class="recommendation">📈 Set up error tracking (Sentry, Rollbar)</div>
+            <h2>Recommendations</h2>
+            <div class="recommendation">Fix all critical failures before deploying to production</div>
+            <div class="recommendation">Consider upgrading to PostgreSQL or MySQL for production</div>
+            <div class="recommendation">Ensure SECRET_KEY is properly configured</div>
+            <div class="recommendation">Enable HTTPS for production deployment</div>
+            <div class="recommendation">Set up automated backups for production database</div>
+            <div class="recommendation">Configure monitoring and logging for production</div>
+            <div class="recommendation">Use a production WSGI server (Gunicorn, uWSGI)</div>
+            <div class="recommendation">Set up health check endpoints for load balancers</div>
+            <div class="recommendation">Implement rate limiting for API endpoints</div>
+            <div class="recommendation">Set up error tracking (Sentry, Rollbar)</div>
         </div>
         
         <div class="footer">
@@ -927,7 +927,7 @@ Test URL: {self.base_url}
         with open(html_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         
-        self.logger.info(f"📊 HTML report saved to: {html_file}")
+        self.logger.info(f"HTML report saved to: {html_file}")
 
     def cleanup(self):
         """Clean up test resources"""
@@ -935,9 +935,9 @@ Test URL: {self.base_url}
             if self.test_dir.exists():
                 import shutil
                 shutil.rmtree(self.test_dir)
-            self.logger.info("✅ Test cleanup completed")
+            self.logger.info("Test cleanup completed")
         except Exception as e:
-            self.logger.warning(f"⚠️ Test cleanup failed: {str(e)}")
+            self.logger.warning(f"WARNING: Test cleanup failed: {str(e)}")
 
 
 def main():
@@ -951,7 +951,7 @@ def main():
     
     args = parser.parse_args()
     
-    print("🚀 Starting OurChat Production Readiness Test Suite...")
+    print("Starting OurChat Production Readiness Test Suite...")
     print(f"   Target URL: {args.url}")
     print(f"   Verbose: {args.verbose}")
     print("   " + "="*50)
@@ -962,13 +962,13 @@ def main():
         
         print("\n" + "="*50)
         if is_ready:
-            print("🎉 SUCCESS: Your application appears ready for production!")
+            print("SUCCESS: Your application appears ready for production!")
             print("   Review the detailed report for any remaining optimizations.")
         else:
-            print("⚠️  WARNING: Your application needs attention before production deployment.")
+            print("WARNING: Your application needs attention before production deployment.")
             print("   Please address the critical issues identified in the report.")
         
-        print("📄 Check the generated reports for detailed information.")
+        print("Check the generated reports for detailed information.")
         
         # Cleanup
         tester.cleanup()
@@ -977,10 +977,10 @@ def main():
         sys.exit(0 if is_ready else 1)
         
     except KeyboardInterrupt:
-        print("\n🛑 Test suite interrupted by user")
+        print("\nTest suite interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"💥 Fatal error: {str(e)}")
+        print(f"FATAL ERROR: {str(e)}")
         sys.exit(1)
 
 

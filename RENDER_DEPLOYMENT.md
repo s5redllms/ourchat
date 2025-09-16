@@ -13,9 +13,22 @@
    
 5. **Environment Variables**:
    - FLASK_ENV=production
-   - SECRET_KEY=your-secret-key-here
+   - SECRET_KEY=your-secure-secret-key-minimum-32-characters (CRITICAL: Generate secure key!)
+   
+   **Generate SECRET_KEY:**
+   ```bash
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
    
 6. **Deploy**: Click "Create Web Service"
+
+## Security Verification
+
+After deployment, run security tests:
+```bash
+pip install requests
+python security_test.py https://your-app-url.onrender.com
+```
 
 ## Custom Domain Setup
 1. In Render dashboard, go to Settings → Custom Domains  

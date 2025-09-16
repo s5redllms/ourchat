@@ -1,18 +1,38 @@
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for, send_from_directory
 from database import db, User, Contact, Message, init_db
-from sqlalchemy import inspect, func
+from sqlalchemy import inspect, func, text
 from werkzeug.utils import secure_filename
 from PIL import Image
 import os
 import uuid
+import secrets
+import bleach
 from datetime import datetime
+from markupsafe import Markup
 
 app = Flask(__name__)
 
-# Configuration
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+# SECURITY: Generate secure secret key if not provided
+secret_key = os.environ.get('SECRET_KEY')
+if not secret_key:
+    if os.environ.get('FLASK_ENV') == 'production':
+        raise ValueError("SECRET_KEY environment variable must be set in production!")
+    else:
+        # Generate a secure random key for development
+        secret_key = secrets.token_hex(32)
+        print("WARNING: Using auto-generated SECRET_KEY for development. Set SECRET_KEY environment variable for production!")
+
+app.secret_key = secret_key
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ourchat.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# SECURITY: Production settings
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config['DEBUG'] = False
+    app.config['TESTING'] = False
+    app.config['SERVER_NAME'] = None  # Allow any host
+else:
+    app.config['DEBUG'] = False  # Disable debug mode even in development for security
 
 # File upload configuration
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
@@ -51,6 +71,39 @@ def resize_image(image_path, max_size=(800, 800)):
             img.save(image_path, 'JPEG', quality=85, optimize=True)
     except Exception as e:
         print(f"Error resizing image: {e}")
+
+# SECURITY: Input sanitization helper
+def sanitize_input(text):
+    """Sanitize user input to prevent XSS attacks"""
+    if not text:
+        return text
+    # Allow basic formatting but remove dangerous tags
+    allowed_tags = ['b', 'i', 'u', 'em', 'strong', 'p', 'br']
+    allowed_attributes = {}
+    return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+# SECURITY: Add security headers to all responses
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to protect against common attacks"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
+
+# SECURITY: Database health check with proper SQL text
+def check_database_connection():
+    """Check database connection health"""
+    try:
+        # Use text() for explicit SQL text declaration
+        db.session.execute(text('SELECT 1'))
+        return True
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        return False
 
 # Initialize database
 init_db(app)
@@ -161,6 +214,11 @@ def register_api():
     
     if len(password) < 6:
         return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    
+    # SECURITY: Sanitize username input
+    username = sanitize_input(str(username).strip())
+    if len(username) < 3:
+        return jsonify({'error': 'Username must be at least 3 characters after sanitization'}), 400
     
     # Check if user already exists
     # FIXED: Use db.session.query() instead of User.query
@@ -380,11 +438,28 @@ def send_message():
     if not receiver_id or not content:
         return jsonify({'error': 'Receiver and content are required'}), 400
     
+    # SECURITY: Sanitize message content to prevent XSS
+    sanitized_content = sanitize_input(str(content))
+    
+    # Verify receiver exists and user has permission to message them
+    receiver = db.session.get(User, receiver_id)
+    if not receiver:
+        return jsonify({'error': 'Receiver not found'}), 404
+    
+    # Check if they are contacts
+    contact_relationship = db.session.query(Contact).filter_by(
+        user_id=session['user_id'],
+        contact_user_id=receiver_id
+    ).first()
+    
+    if not contact_relationship:
+        return jsonify({'error': 'You can only message your contacts'}), 403
+    
     # Create new message
     message = Message(
         sender_id=session['user_id'],
         receiver_id=receiver_id,
-        content=content
+        content=sanitized_content
     )
     db.session.add(message)
     db.session.commit()
@@ -562,13 +637,18 @@ def update_display_name():
     if len(display_name) > 100:
         return jsonify({'error': 'Display name must be 100 characters or less'}), 400
     
+    # SECURITY: Sanitize display name
+    sanitized_display_name = sanitize_input(display_name)
+    if len(sanitized_display_name) < 1:
+        return jsonify({'error': 'Display name invalid after sanitization'}), 400
+    
     user = db.session.get(User, session['user_id'])
-    user.display_name = display_name
+    user.display_name = sanitized_display_name
     db.session.commit()
     
     return jsonify({
         'success': True,
-        'display_name': display_name
+        'display_name': sanitized_display_name
     })
 
 # File upload for messages
@@ -679,5 +759,39 @@ Allow: /
 Sitemap: https://ourchat.strangled.net/sitemap.xml"""
     return robots_txt, 200, {'Content-Type': 'text/plain'}
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Check database connection
+        db_healthy = check_database_connection()
+        
+        status = {
+            'status': 'healthy' if db_healthy else 'unhealthy',
+            'database': 'connected' if db_healthy else 'disconnected',
+            'timestamp': datetime.utcnow().isoformat(),
+            'version': '1.0.0'
+        }
+        
+        return jsonify(status), 200 if db_healthy else 503
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 503
+
+# SECURITY: Production-ready run configuration
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Check if we're in production
+    is_production = os.environ.get('FLASK_ENV') == 'production'
+    
+    if is_production:
+        # Production settings - use gunicorn in production
+        print("Production mode: Use gunicorn to run this application")
+        print("Command: gunicorn app:app --host 0.0.0.0 --port $PORT")
+        app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    else:
+        # Development settings
+        print("Development mode: Running Flask development server")
+        app.run(debug=False, host='127.0.0.1', port=5000)  # Disable debug even in dev
