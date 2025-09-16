@@ -10,3 +10,19 @@ instance/
 .DS_Store
 *.log
 .railway
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+ourchat.db
+
+# Upload directories
+static/uploads/
+uploads/
+
+# Large binaries
+*.exe
+*.zip
+ngrok.exe
+ngrok.zip
