@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OurChat - Encrypted Chat Platform | ourchat.strangled.net</title>
+    <meta name="description" content="OurChat is a self-hosted, un-monitored encrypted chat platform with AI capabilities. Secure messaging with end-to-end encryption.">
+    <meta name="keywords" content="encrypted chat, secure messaging, self-hosted chat, privacy, end-to-end encryption, ourChat">
+    <meta name="author" content="OurChat">
+    <meta property="og:title" content="OurChat - Encrypted Chat Platform">
+    <meta property="og:description" content="Self-hosted, un-monitored encrypted chat and AI platform">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ourchat.strangled.net">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="OurChat - Encrypted Chat Platform">
+    <meta name="twitter:description" content="Self-hosted, un-monitored encrypted chat and AI platform">
+    <link rel="canonical" href="https://ourchat.strangled.net">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer">
+        <header>
+            <div class="topbar">
+                <button class="sidebar-toggle" id="sidebarToggle" style="display: none;">☰</button>
+                <div class="topbar-logo">OurChat</div>
+                <div class="topbar-user" id="currentUser" style="display: none;"></div>
+            </div>
+        </header>
+        
+        <div class="container">
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3>Menu</h3>
+                </div>
+                <ul>
+                    <li><a href="#" id="contactsLink"><span>👥</span> <span class="menu-text">Contacts</span></a></li>
+                    <li><a href="#" id="addContactLink"><span>➕</span> <span class="menu-text">Add Contact</span></a></li>
+                    <li><a href="#" id="settingsLink"><span>⚙️</span> <span class="menu-text">Settings</span></a></li>
+                    <!-- Temporarily hidden unimplemented features -->
+                    <!-- <li><a href="#" id="aiAssistantLink"><span>🤖</span> <span class="menu-text">AI Assistant</span></a></li> -->
+                    <li id="adminDashboardLink" style="display: none;"><a href="#" id="adminDashboardBtn"><span>👑</span> <span class="menu-text">Admin Dashboard</span></a></li>
+                    <li><a href="#" id="logoutBtn"><span>🚪</span> <span class="menu-text">Logout</span></a></li>
+                </ul>
+            </aside>
+            
+            <main class="content" id="mainContent">
+                <!-- Login/Register Form (shown by default) -->
+                <div class="auth-section" id="authSection">
+                    <div class="auth-container">
+                        <div class="auth-form" id="authForm">
+                            <div class="form-switch">
+                                <button class="switch-btn active" id="loginBtn">Login</button>
+                                <button class="switch-btn" id="registerBtn">Register</button>
+                            </div>
+                            
+                            <!-- Login Form -->
+                            <form class="auth-form-content active" id="loginForm">
+                                <h2>Login to OurChat</h2>
+                                <div class="form-group">
+                                    <input type="text" id="loginUsername" placeholder="Username" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" id="loginPassword" placeholder="Password" required>
+                                </div>
+                                <button type="submit" class="auth-submit">Login</button>
+                                <div class="form-message" id="loginMessage"></div>
+                            </form>
+                            
+                            <!-- Register Form -->
+                            <form class="auth-form-content" id="registerForm">
+                                <h2>Create Account</h2>
+                                <div class="form-group">
+                                    <input type="text" id="registerUsername" placeholder="Username" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" id="registerEmail" placeholder="Email" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" id="registerPassword" placeholder="Password" required>
+                                </div>
+                                <button type="submit" class="auth-submit">Register</button>
+                                <div class="form-message" id="registerMessage"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contacts Section -->
+                <div class="contacts-section" id="contactsSection" style="display: none;">
+                    <div class="contacts-header">
+                        <h1>Contacts</h1>
+                        <div class="search-container">
+                            <input type="text" class="search-input" placeholder="Search contacts..." id="searchInput">
+                        </div>
+                    </div>
+                    
+                    <div class="contacts-list" id="contactsList">
+                        <!-- Contacts will be loaded dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Chat Section -->
+                <div class="chat-section" id="chatSection" style="display: none;">
+                    <div class="chat-header">
+                        <button class="back-button" id="backToContacts">←</button>
+                        <div class="chat-contact-info">
+                            <div class="contact-avatar">👤</div>
+                            <div class="contact-details">
+                                <div class="contact-name" id="chatContactName">Contact Name</div>
+                                <div class="contact-status" id="chatContactStatus">Online</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Messages will be loaded dynamically -->
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="media-buttons" id="mediaButtons">
+                            <input type="file" id="imageInput" accept="image/*" style="display: none;" multiple>
+                            <input type="file" id="videoInput" accept="video/*" style="display: none;" multiple>
+                            <input type="file" id="fileInput" style="display: none;" multiple>
+                            
+                            <button type="button" class="media-btn" id="imageBtn" title="Send Image">📷</button>
+                            <button type="button" class="media-btn" id="videoBtn" title="Send Video">🎥</button>
+                            <button type="button" class="media-btn" id="fileBtn" title="Send File">📁</button>
+                        </div>
+                        <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
+                        <button class="send-button" id="sendMessageBtn">Send</button>
+                    </div>
+                </div>
+                
+                <!-- Add Contact Section -->
+                <div class="add-contact-section" id="addContactSection" style="display: none;">
+                    <div class="add-contact-header">
+                        <button class="back-button" id="backToContactsFromAdd">←</button>
+                        <h1>Add New Contact</h1>
+                    </div>
+                    
+                    <div class="add-contact-form-container">
+                        <form class="add-contact-form" id="addContactForm">
+                            <div class="form-group">
+                                <label for="contactDisplayName">Display Name</label>
+                                <input type="text" id="contactDisplayName" placeholder="How you want to call this contact" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactUserCode">User Code</label>
+                                <input type="text" id="contactUserCode" placeholder="Enter their 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                                <small>Ask the person for their 6-digit user code</small>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="auth-submit">Add Contact</button>
+                                <button type="button" class="cancel-btn" id="cancelAddContact">Cancel</button>
+                            </div>
+                            
+                            <div class="form-message" id="addContactMessage"></div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Settings Section -->
+                <div class="settings-section" id="settingsSection" style="display: none;">
+                    <div class="settings-header">
+                        <button class="back-button" id="backToContactsFromSettings">←</button>
+                        <h1>Settings</h1>
+                    </div>
+                    
+                    <div class="settings-content">
+                        <div class="settings-card">
+                            <h2>Your User Code</h2>
+                            <p>Share this code with others so they can add you as a contact:</p>
+                            <div class="user-code-display">
+                                <span id="userCodeDisplay">------</span>
+                                <button class="copy-btn" id="copyUserCode" title="Copy to clipboard">📎</button>
+                            </div>
+                            <p class="code-info">This is your unique 6-digit identifier that others need to add you.</p>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h2>Profile</h2>
+                            <div class="profile-settings">
+                                <div class="profile-picture-section">
+                                    <h3>Profile Picture</h3>
+                                    <div class="profile-picture-container">
+                                        <div class="profile-picture-preview" id="profilePicturePreview">
+                                            <div class="profile-avatar"></div>
+                                        </div>
+                                        <div class="profile-picture-controls">
+                                            <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
+                                            <button type="button" class="upload-btn" id="uploadProfileBtn">Upload Photo</button>
+                                            <button type="button" class="remove-btn" id="removeProfileBtn" style="display: none;">Remove</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="display-name-section">
+                                    <h3>Display Name</h3>
+                                    <form class="display-name-form" id="displayNameForm">
+                                        <div class="form-group">
+                                            <input type="text" id="displayNameInput" placeholder="Enter display name" maxlength="100">
+                                            <small>This is how others will see your name</small>
+                                        </div>
+                                        <button type="submit" class="auth-submit">Update Display Name</button>
+                                        <div class="form-message" id="displayNameMessage"></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h2>Account Information</h2>
+                            <div class="account-info">
+                                <div class="info-item">
+                                    <label>Username:</label>
+                                    <span id="settingsUsername">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Email:</label>
+                                    <span id="settingsEmail">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h2>Appearance</h2>
+                            <div class="appearance-settings">
+                                <button id="themeToggleBtn" class="theme-toggle-button">
+                                    <span class="theme-icon">🌙</span>
+                                    <span class="theme-text">Dark Mode</span>
+                                </button>
+                                <p class="setting-description">Click to switch between light and dark themes for better viewing comfort.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h2>Change Password</h2>
+                            <form class="password-change-form" id="passwordChangeForm">
+                                <div class="form-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input type="password" id="currentPassword" placeholder="Enter current password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input type="password" id="newPassword" placeholder="Enter new password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input type="password" id="confirmPassword" placeholder="Confirm new password" required>
+                                </div>
+                                <button type="submit" class="auth-submit">Change Password</button>
+                                <div class="form-message" id="passwordChangeMessage"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Admin Dashboard Section -->
+                <div class="admin-dashboard" id="adminDashboard" style="display: none;">
+                    <div class="admin-header">
+                        <h1>Admin Dashboard</h1>
+                        <button class="back-button" id="backToMain">← Back</button>
+                    </div>
+                    
+                    <div class="admin-stats">
+                        <div class="stat-card">
+                            <h3>Total Users</h3>
+                            <div class="stat-value" id="totalUsers">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Messages</h3>
+                            <div class="stat-value" id="totalMessages">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Contacts</h3>
+                            <div class="stat-value" id="totalContacts">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-features">
+                        <div class="feature-section">
+                            <h2>Users Management</h2>
+                            <div class="feature-content">
+                                <div class="users-list" id="usersList">
+                                    <div class="loading">Loading users...</div>
+                                </div>
+                                <button class="admin-action-btn" id="refreshUsers">Refresh Users</button>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-section">
+                            <h2>Messages Management</h2>
+                            <div class="feature-content">
+                                <div class="messages-list" id="messagesList">
+                                    <div class="loading">Loading messages...</div>
+                                </div>
+                                <button class="admin-action-btn" id="refreshMessages">Refresh Messages</button>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-section">
+                            <h2>System Settings</h2>
+                            <div class="feature-content">
+                                <div class="settings-form">
+                                    <div class="form-group">
+                                        <label for="maintenanceMode">Maintenance Mode</label>
+                                        <select id="maintenanceMode">
+                                            <option value="off">Off</option>
+                                            <option value="on">On</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="maxUsers">Max Users</label>
+                                        <input type="number" id="maxUsers" value="1000">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="messageRetention">Message Retention (days)</label>
+                                        <input type="number" id="messageRetention" value="30">
+                                    </div>
+                                    <button class="admin-action-btn" id="saveSettings">Save Settings</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Image Modal -->
+    <div class="image-modal" id="imageModal">
+        <img id="modalImage" src="" alt="Full size image">
+    </div>
+
+    <script src="{{ url_for('static', filename='crypto.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

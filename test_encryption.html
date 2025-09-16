@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E2E Encryption Test</title>
+</head>
+<body>
+    <h1>E2E Encryption Test</h1>
+    <div>
+        <h3>Test Input:</h3>
+        <input type="text" id="testMessage" value="Hello, this is a test message!" style="width: 300px;">
+        <br><br>
+        <input type="text" id="testKey" value="alpha-bravo-charlie-1234" style="width: 300px;" placeholder="Encryption key">
+        <br><br>
+        <button onclick="runTest()">Test Encryption/Decryption</button>
+    </div>
+    
+    <div id="results" style="margin-top: 20px;">
+        <!-- Results will appear here -->
+    </div>
+
+    <script src="/static/crypto.js"></script>
+    <script>
+        async function runTest() {
+            const message = document.getElementById('testMessage').value;
+            const key = document.getElementById('testKey').value;
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                console.log('🧪 Starting encryption test...');
+                console.log('📝 Original message:', message);
+                console.log('🔑 Test key:', key);
+                
+                // Test encryption
+                const encrypted = await window.e2eEncryption.encrypt(message, key);
+                console.log('🔐 Encrypted:', encrypted);
+                
+                // Test decryption
+                const decrypted = await window.e2eEncryption.decrypt(encrypted, key);
+                console.log('🔓 Decrypted:', decrypted);
+                
+                // Check if it matches
+                const success = decrypted === message;
+                console.log('✅ Test result:', success ? 'PASS' : 'FAIL');
+                
+                // Display results
+                resultsDiv.innerHTML = `
+                    <h3>Test Results:</h3>
+                    <p><strong>Original:</strong> ${message}</p>
+                    <p><strong>Encrypted:</strong> ${encrypted.substring(0, 100)}${encrypted.length > 100 ? '...' : ''}</p>
+                    <p><strong>Decrypted:</strong> ${decrypted}</p>
+                    <p><strong>Match:</strong> <span style="color: ${success ? 'green' : 'red'}">${success ? 'YES ✅' : 'NO ❌'}</span></p>
+                    <p><strong>Encrypted Length:</strong> ${encrypted.length} characters</p>
+                    <p><strong>Is Detected as Encrypted:</strong> ${window.e2eEncryption.isEncrypted(encrypted) ? 'YES' : 'NO'}</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">Test failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(runTest, 1000);
+        });
+    </script>
+</body>
+</html>
